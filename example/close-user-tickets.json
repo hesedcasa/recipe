@@ -1,0 +1,40 @@
+{
+  "name": "close-user-tickets",
+  "description": "Set every Jira ticket assigned to a user to Done.",
+  "version": "1.0",
+  "vars": {
+    "assignee": "jdoe",
+    "project": "ENG"
+  },
+  "steps": [
+    {
+      "log": "Searching for open tickets assigned to ${assignee} in ${project}..."
+    },
+    {
+      "exec": "jira issue list --plain --no-headers --jql \"project = ${project} AND assignee = ${assignee} AND statusCategory != Done\" --json",
+      "capture": "tickets",
+      "json": true,
+      "silent": true
+    },
+    {
+      "log": "Found ${tickets.issues.length} ticket(s) to close."
+    },
+    {
+      "forEach": "${tickets.issues}",
+      "as": "ticket",
+      "steps": [
+        {
+          "if": "${ticket.fields.status.name} != Done",
+          "log": "Closing ${ticket.key} (currently ${ticket.fields.status.name})"
+        },
+        {
+          "if": "${ticket.fields.status.name} != Done",
+          "exec": "jira issue move ${ticket.key} Done"
+        }
+      ]
+    },
+    {
+      "log": "Done. Processed ${tickets.issues.length} ticket(s)."
+    }
+  ]
+}
