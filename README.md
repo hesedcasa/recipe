@@ -13,6 +13,7 @@ sdkck plugins install @hesed/recipe
 
 <!-- toc -->
 * [recipe](#recipe)
+* [Install](#install)
 * [Usage](#usage)
 * [Commands](#commands)
 <!-- tocstop -->
@@ -23,7 +24,7 @@ $ npm install -g @hesed/recipe
 $ recipe COMMAND
 running command...
 $ recipe (--version)
-@hesed/recipe/0.1.0 darwin-arm64 node-v22.22.3
+@hesed/recipe/0.1.0 linux-x64 node-v22.22.3
 $ recipe --help [COMMAND]
 USAGE
   $ recipe COMMAND
