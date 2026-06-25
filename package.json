@@ -10,7 +10,7 @@
   "dependencies": {
     "@hesed/plugin-lib": "^0.10.0",
     "@oclif/core": "^4",
-    "ansis": "^3"
+    "ansis": "^4"
   },
   "devDependencies": {
     "@eslint/compat": "^2",
