@@ -49,13 +49,21 @@ Use --var to override the recipe's default variables, and --dry-run to preview t
       exec: (command) => execShell(command),
       log: (message) => this.log(message),
       runCommand: (id, argv, silent) => {
+        // Find the longest matching subcommand by greedily consuming argv tokens.
+        // Stopping at the first match would dispatch "recipe validate" to the "recipe"
+        // topic instead of the "recipe:validate" subcommand.
+        let bestId: null | string = this.config.findCommand(id) ? id : null
+        let bestI = 0
         let commandId = id
-        let i = 0
-        while (i < argv.length && !this.config.findCommand(commandId)) {
-          commandId = `${commandId}:${argv[i++]}`
+        for (const [i, token] of argv.entries()) {
+          commandId = `${commandId}:${token}`
+          if (this.config.findCommand(commandId)) {
+            bestId = commandId
+            bestI = i + 1
+          }
         }
 
-        const [resolvedId, resolvedArgv] = this.config.findCommand(commandId) ? [commandId, argv.slice(i)] : [id, argv]
+        const [resolvedId, resolvedArgv] = bestId ? [bestId, argv.slice(bestI)] : [id, argv]
         if (silent) {
           const orig = process.stdout.write.bind(process.stdout)
           process.stdout.write = () => true

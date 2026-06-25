@@ -82,15 +82,21 @@ Always wrap each step in single quotes
       exec: (command) => execShell(command),
       log: (message) => this.log(message),
       runCommand: (id, cmdArgv, silent) => {
+        // Find the longest matching subcommand by greedily consuming argv tokens.
+        // Stopping at the first match would dispatch "recipe validate" to the "recipe"
+        // topic instead of the "recipe:validate" subcommand.
+        let bestId: null | string = this.config.findCommand(id) ? id : null
+        let bestI = 0
         let commandId = id
-        let i = 0
-        while (i < cmdArgv.length && !this.config.findCommand(commandId)) {
-          commandId = `${commandId}:${cmdArgv[i++]}`
+        for (const [i, token] of cmdArgv.entries()) {
+          commandId = `${commandId}:${token}`
+          if (this.config.findCommand(commandId)) {
+            bestId = commandId
+            bestI = i + 1
+          }
         }
 
-        const [resolvedId, resolvedArgv] = this.config.findCommand(commandId)
-          ? [commandId, cmdArgv.slice(i)]
-          : [id, cmdArgv]
+        const [resolvedId, resolvedArgv] = bestId ? [bestId, cmdArgv.slice(bestI)] : [id, cmdArgv]
         if (silent) {
           const orig = process.stdout.write.bind(process.stdout)
           process.stdout.write = () => true

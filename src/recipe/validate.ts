@@ -15,6 +15,10 @@ function validateStep(step: unknown, path: string): void {
     throw new Error(`${path} has no recognized step key (one of: ${STEP_TYPE_KEYS.join(', ')}).`)
   }
 
+  if (typeKeys.length > 1) {
+    throw new Error(`${path} has multiple step keys (${typeKeys.join(', ')}); a step must use exactly one.`)
+  }
+
   if ('forEach' in step || 'repeat' in step) {
     if (!Array.isArray(step.steps)) throw new Error(`${path} must have a "steps" array.`)
     for (const [i, child] of (step.steps as Step[]).entries()) validateStep(child, `${path}.steps[${i}]`)
