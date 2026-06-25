@@ -24,7 +24,7 @@ $ npm install -g @hesed/recipe
 $ recipe COMMAND
 running command...
 $ recipe (--version)
-@hesed/recipe/0.1.0 linux-x64 node-v22.23.0
+@hesed/recipe/0.1.0 darwin-arm64 node-v22.22.3
 $ recipe --help [COMMAND]
 USAGE
   $ recipe COMMAND
@@ -33,6 +33,7 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
+* [`recipe chain`](#recipe-chain)
 * [`recipe recipe`](#recipe-recipe)
 * [`recipe recipe create NAME`](#recipe-recipe-create-name)
 * [`recipe recipe delete RECIPE`](#recipe-recipe-delete-recipe)
@@ -42,6 +43,53 @@ USAGE
 * [`recipe recipe run RECIPE`](#recipe-recipe-run-recipe)
 * [`recipe recipe show RECIPE`](#recipe-recipe-show-recipe)
 * [`recipe recipe validate RECIPE`](#recipe-recipe-validate-recipe)
+
+## `recipe chain`
+
+Chain commands on the fly, passing each step's output into the next.
+
+```
+USAGE
+  $ recipe chain [--json] [--dry-run] [--save <value>] [--var <value>...]
+
+FLAGS
+  --dry-run         Print the commands that would run without executing them.
+  --save=<value>    Save the assembled chain as a reusable recipe with this name.
+  --var=<value>...  Provide an initial variable (key=value). Repeatable. Values parsed as JSON when possible.
+
+GLOBAL FLAGS
+  --json  Format output as json.
+
+DESCRIPTION
+  Chain commands on the fly, passing each step's output into the next.
+
+  Each positional argument is one step. A step's output is captured into a named variable
+  with a trailing "=> name" (or "=>json name" to parse JSON), and later steps reference that
+  variable with placeholder interpolation (see the examples). Steps can be shell commands
+  (exec), this CLI's own commands (run), variable assignments (set), logs (log), loops
+  (forEach / repeat) and branches (if / else).
+
+  A control step's body is the single step that follows it, or a "{ ... }" block (pass "{"
+  and "}" as their own arguments) to group several steps. Use --save to keep the assembled
+  chain as a reusable recipe.
+
+  Wrap each step in SINGLE quotes. Steps contain placeholders, and inside double quotes a
+  shell tries to expand them itself (zsh fails with "bad substitution") — single quotes pass
+  them through untouched for this command to interpolate.
+
+EXAMPLES
+  $ recipe chain 'run: jira issue search "assignee = currentUser() AND statusCategory != Done" => r' 'log: found ${r.data.issues.length} open issue(s)'
+
+  $ recipe chain 'run: jira issue search "assignee = currentUser() AND statusCategory != Done" => r' 'forEach: ${r.data.issues} as issue' 'log: ${issue.key} — ${issue.fields.summary}'
+
+  $ recipe chain 'run: bb pr list my-workspace my-repo --state OPEN => r' 'forEach: ${r.data.values} as pr' 'log: #${pr.id} ${pr.title} (${pr.source.branch.name} → ${pr.destination.branch.name})'
+
+  $ recipe chain 'set: count = 3' 'if: ${count} > 0' 'log: work to do' else 'log: nothing'
+
+  $ recipe chain 'exec: date' --dry-run
+```
+
+_See code: [src/commands/chain.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/chain.ts)_
 
 ## `recipe recipe`
 

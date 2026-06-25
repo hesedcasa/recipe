@@ -1,0 +1,51 @@
+{
+  "name": "profiles-with-liveness-today",
+  "description": "Find profiles that have a livenessverifications record created today, by chaining two MySQL queries.",
+  "version": "1.0",
+  "vars": {
+    "sinceDays": 0
+  },
+  "steps": [
+    {
+      "log": "Step 1 — livenessverifications created in the last ${sinceDays} day(s) (0 = today only)..."
+    },
+    {
+      "exec": "sdkck mysql query \"SELECT DISTINCT profile_id FROM livenessverifications WHERE created_at >= CURDATE() - INTERVAL ${sinceDays} DAY AND created_at < CURDATE() + INTERVAL 1 DAY LIMIT 10000\" --format json --skip-confirmation 2>/dev/null",
+      "capture": "liveness",
+      "json": true
+    },
+    {
+      "log": "Found ${liveness.length} profile(s) with a livenessverifications record in that window."
+    },
+    {
+      "if": "${liveness.length} > 0",
+      "then": [
+        {
+          "log": "Step 2 — fetching the matching profile rows..."
+        },
+        {
+          "exec": "sdkck mysql query \"SELECT id, uid, user_id, site_id, sex, account_type FROM profiles WHERE id IN (${liveness[*].profile_id}) LIMIT 10000\" --format json --skip-confirmation 2>/dev/null",
+          "capture": "profiles",
+          "json": true
+        },
+        {
+          "log": "Retrieved ${profiles.length} profile record(s):"
+        },
+        {
+          "forEach": "${profiles}",
+          "as": "p",
+          "steps": [
+            {
+              "log": "  #${p_index} profile id=${p.id} uid=${p.uid} user_id=${p.user_id} sex=${p.sex}"
+            }
+          ]
+        }
+      ],
+      "else": [
+        {
+          "log": "No livenessverifications records in that window — no profiles to fetch."
+        }
+      ]
+    }
+  ]
+}

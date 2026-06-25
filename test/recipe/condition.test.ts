@@ -18,6 +18,20 @@ describe('recipe condition', () => {
     expect(evaluateCondition('${status} == Done', context)).to.be.false
   })
 
+  it('interpolates the right-hand operand so two variables can be compared', () => {
+    const ctx = {a: 'Closed', b: 'Closed', c: 'Open', m: 3, n: 3}
+    expect(evaluateCondition('${a} == ${b}', ctx)).to.be.true
+    expect(evaluateCondition('${a} == ${c}', ctx)).to.be.false
+    expect(evaluateCondition('${a} != ${c}', ctx)).to.be.true
+    expect(evaluateCondition('${n} >= ${m}', ctx)).to.be.true
+  })
+
+  it('supports a quoted right-hand operand (preserving spaces)', () => {
+    expect(evaluateCondition('${status} == "Open"', context)).to.be.true
+    expect(evaluateCondition('${name} == "Won\'t Do"', {name: "Won't Do"})).to.be.true
+    expect(evaluateCondition('${name} == "Done"', {name: "Won't Do"})).to.be.false
+  })
+
   it('evaluates numeric comparisons', () => {
     expect(evaluateCondition('${count} > 0', context)).to.be.true
     expect(evaluateCondition('${count} >= 3', context)).to.be.true

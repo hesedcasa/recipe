@@ -1,40 +1,52 @@
 {
   "name": "close-user-tickets",
-  "description": "Set every Jira ticket assigned to a user to Done.",
+  "description": "Move every open Jira ticket assigned to a user to a target status. Uses the `sdkck jira` plugin: searches with JQL, then for each ticket looks up its available transitions and applies the one whose name matches --var transition (default \"Done\"; many workflows call it \"Closed\"). Authenticate once with `sdkck jira auth add`.",
   "version": "1.0",
   "vars": {
-    "assignee": "jdoe",
-    "project": "ENG"
+    "assignee": "currentUser()",
+    "project": "SATHREE",
+    "transition": "Done"
   },
   "steps": [
     {
       "log": "Searching for open tickets assigned to ${assignee} in ${project}..."
     },
     {
-      "exec": "jira issue list --plain --no-headers --jql \"project = ${project} AND assignee = ${assignee} AND statusCategory != Done\" --json",
-      "capture": "tickets",
+      "exec": "sdkck jira issue search \"project = ${project} AND assignee = ${assignee} AND statusCategory != Done\" --max 100 2>/dev/null",
+      "capture": "result",
       "json": true,
       "silent": true
     },
     {
-      "log": "Found ${tickets.issues.length} ticket(s) to close."
+      "log": "Found ${result.data.issues.length} ticket(s) to close."
     },
     {
-      "forEach": "${tickets.issues}",
-      "as": "ticket",
+      "forEach": "${result.data.issues}",
+      "as": "issue",
       "steps": [
         {
-          "if": "${ticket.fields.status.name} != Done",
-          "log": "Closing ${ticket.key} (currently ${ticket.fields.status.name})"
+          "log": "Closing ${issue.key} (currently ${issue.fields.status.name}) via \"${transition}\"..."
         },
         {
-          "if": "${ticket.fields.status.name} != Done",
-          "exec": "jira issue move ${ticket.key} Done"
+          "exec": "sdkck jira issue transitions ${issue.key} 2>/dev/null",
+          "capture": "available",
+          "json": true,
+          "silent": true
+        },
+        {
+          "forEach": "${available.data.transitions}",
+          "as": "t",
+          "steps": [
+            {
+              "if": "${t.name} == ${transition}",
+              "exec": "sdkck jira issue transition ${issue.key} ${t.id}"
+            }
+          ]
         }
       ]
     },
     {
-      "log": "Done. Processed ${tickets.issues.length} ticket(s)."
+      "log": "Done. Processed ${result.data.issues.length} ticket(s)."
     }
   ]
 }

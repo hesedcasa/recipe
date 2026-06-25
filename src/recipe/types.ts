@@ -34,7 +34,7 @@ export interface RepeatStep {
 }
 
 export interface ForEachStep {
-  as: string
+  as?: string
   forEach: string
   if?: string
   steps: Step[]
