@@ -129,25 +129,37 @@ describe('recipe engine', () => {
     expect(result.vars.data).to.deep.equal({count: 5})
   })
 
-  it('captures raw stdout when json flag is not set', async () => {
+  it('captures raw stdout, stripping trailing newlines, when json flag is not set', async () => {
     const recipe: Recipe = {
       name: 'raw-exec',
       steps: [{capture: 'out', exec: 'echo hello'}],
     }
     const {runner} = fakeRunner({'echo hello': 'hello\n'})
     const result = await executeRecipe(recipe, runner)
-    expect(result.vars.out).to.equal('hello\n')
+    // Trailing newlines are stripped so the value chains into later commands cleanly.
+    expect(result.vars.out).to.equal('hello')
   })
 
-  it('exec without capture discards stdout without error', async () => {
+  it('logs uncaptured exec stdout so a chain behaves like a terminal', async () => {
     const recipe: Recipe = {
-      name: 'discard',
+      name: 'visible',
       steps: [{exec: 'some-cmd'}],
     }
-    const {ran, runner} = fakeRunner({'some-cmd': 'ignored'})
+    const {logs, ran, runner} = fakeRunner({'some-cmd': 'hello\n'})
     const result = await executeRecipe(recipe, runner)
     expect(ran[0].id).to.equal('some-cmd')
+    expect(logs).to.deep.equal(['hello']) // trailing newline stripped
     expect(result.vars).not.to.have.property('out')
+  })
+
+  it('suppresses uncaptured exec stdout when silent is set', async () => {
+    const recipe: Recipe = {
+      name: 'quiet',
+      steps: [{exec: 'some-cmd', silent: true}],
+    }
+    const {logs, runner} = fakeRunner({'some-cmd': 'noisy'})
+    await executeRecipe(recipe, runner)
+    expect(logs).to.deep.equal([])
   })
 
   it('exec step in dry-run mode logs the command and does not execute', async () => {
@@ -238,6 +250,55 @@ describe('recipe engine', () => {
     const {logs, runner} = fakeRunner()
     await executeRecipe(recipe, runner)
     expect(logs).to.deep.equal(['tick', 'tick'])
+  })
+
+  it('repeat without as binds the index to the default "i"', async () => {
+    const recipe: Recipe = {
+      name: 'default-i',
+      steps: [{repeat: 3, steps: [{log: 'i=${i}'}]}],
+    }
+    const {logs, runner} = fakeRunner()
+    await executeRecipe(recipe, runner)
+    expect(logs).to.deep.equal(['i=0', 'i=1', 'i=2'])
+  })
+
+  it('forEach without as binds the element to the default "item"', async () => {
+    const recipe: Recipe = {
+      name: 'default-item',
+      steps: [
+        {set: 'fruits', value: ['apple', 'pear']},
+        {forEach: '${fruits}', steps: [{log: 'item=${item}'}]},
+      ],
+    }
+    const {logs, runner} = fakeRunner()
+    await executeRecipe(recipe, runner)
+    expect(logs).to.deep.equal(['item=apple', 'item=pear'])
+  })
+
+  it('forEach binds the iteration index to <as>_index', async () => {
+    const recipe: Recipe = {
+      name: 'foreach-index',
+      steps: [
+        {set: 'fruits', value: ['apple', 'pear', 'kiwi']},
+        {as: 'fruit', forEach: '${fruits}', steps: [{log: '${fruit_index}:${fruit}'}]},
+      ],
+    }
+    const {logs, runner} = fakeRunner()
+    await executeRecipe(recipe, runner)
+    expect(logs).to.deep.equal(['0:apple', '1:pear', '2:kiwi'])
+  })
+
+  it('forEach with default as exposes item_index', async () => {
+    const recipe: Recipe = {
+      name: 'default-item-index',
+      steps: [
+        {set: 'xs', value: ['a', 'b']},
+        {forEach: '${xs}', steps: [{log: '${item_index}=${item}'}]},
+      ],
+    }
+    const {logs, runner} = fakeRunner()
+    await executeRecipe(recipe, runner)
+    expect(logs).to.deep.equal(['0=a', '1=b'])
   })
 
   it('repeat with count 0 executes no iterations', async () => {
@@ -334,8 +395,8 @@ describe('recipe engine', () => {
     const recipe: Recipe = {
       name: 'step-count',
       steps: [
-        {log: 'one'},              // +1
-        {set: 'x', value: 1},     // +1
+        {log: 'one'}, // +1
+        {set: 'x', value: 1}, // +1
         {as: 'i', repeat: 2, steps: [{log: 'rep ${i}'}]},
         // repeat body runs twice: each log +1, then repeat itself +1 → +3
         {if: '${x} > 0', then: [{log: 'yes'}]},

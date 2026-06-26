@@ -1,5 +1,16 @@
-import {resolvePath} from './interpolate.js'
+import {interpolate, resolvePath} from './interpolate.js'
 import {Context} from './types.js'
+
+/** Resolves a condition's right-hand operand: a ${...} expression, a quoted string, or a bare literal. */
+function resolveOperand(raw: string, context: Context): unknown {
+  const trimmed = raw.trim()
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1)
+  }
+
+  if (trimmed.includes('${')) return interpolate(trimmed, context)
+  return trimmed
+}
 
 function splitOutsideTemplates(expr: string, separator: string): string[] {
   const parts: string[] = []
@@ -27,10 +38,11 @@ function splitOutsideTemplates(expr: string, separator: string): string[] {
   return parts.length > 1 ? parts : [expr]
 }
 
-function applyOp(value: unknown, op: string, right: string): boolean {
+function applyOp(value: unknown, op: string, right: unknown): boolean {
+  const rightStr = String(right)
   switch (op) {
     case '!=': {
-      return String(value) !== right
+      return String(value) !== rightStr
     }
 
     case '<': {
@@ -42,7 +54,7 @@ function applyOp(value: unknown, op: string, right: string): boolean {
     }
 
     case '==': {
-      return String(value) === right
+      return String(value) === rightStr
     }
 
     case '>': {
@@ -54,11 +66,11 @@ function applyOp(value: unknown, op: string, right: string): boolean {
     }
 
     case 'contains': {
-      return Array.isArray(value) ? value.includes(right) : String(value).includes(right)
+      return Array.isArray(value) ? value.includes(right) : String(value).includes(rightStr)
     }
 
     case 'matches': {
-      return new RegExp(right).test(String(value))
+      return new RegExp(rightStr).test(String(value))
     }
 
     default: {
@@ -81,7 +93,7 @@ export function evaluateCondition(expr: string, context: Context): boolean {
   const binaryMatch = /^\$\{([^}]+)\}\s*(==|!=|>=|<=|>|<|contains|matches)\s*(.+)$/.exec(expr)
   if (binaryMatch) {
     const [, path, op, right] = binaryMatch
-    return applyOp(resolvePath(context, path), op, right.trim())
+    return applyOp(resolvePath(context, path), op, resolveOperand(right, context))
   }
 
   const simpleMatch = /^\$\{([^}]+)\}$/.exec(expr)

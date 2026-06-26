@@ -1,25 +1,15 @@
-import {Args, Command, Flags} from '@oclif/core'
+import {HostConfigCommand} from '@hesed/plugin-lib'
+import {Args, Flags} from '@oclif/core'
 import {bold, cyan, dim} from 'ansis'
 
 import {executeRecipe, RecipeRunner} from '../../recipe/engine.js'
 import {execShell} from '../../recipe/exec.js'
 import {resolveRecipe} from '../../recipe/store.js'
 import {Context} from '../../recipe/types.js'
+import {validateRecipe} from '../../recipe/validate.js'
+import {parseVars} from '../../recipe/vars.js'
 
-/** Parses a `--var key=value` flag, JSON-decoding the value when possible. */
-function parseVar(input: string): [string, unknown] {
-  const eq = input.indexOf('=')
-  if (eq === -1) throw new Error(`Invalid --var "${input}". Expected key=value.`)
-  const key = input.slice(0, eq)
-  const raw = input.slice(eq + 1)
-  try {
-    return [key, JSON.parse(raw)]
-  } catch {
-    return [key, raw]
-  }
-}
-
-export default class RecipeRun extends Command {
+export default class RecipeRun extends HostConfigCommand {
   static args = {
     recipe: Args.string({description: 'Name of a saved recipe, or a path to a recipe file.', required: true}),
   }
@@ -44,8 +34,9 @@ Use --var to override the recipe's default variables, and --dry-run to preview t
   public async run(): Promise<Context> {
     const {args, flags} = await this.parse(RecipeRun)
     const recipe = await resolveRecipe(this.config, args.recipe)
+    validateRecipe(recipe)
 
-    const overrides: Context = Object.fromEntries((flags.var ?? []).map((entry) => parseVar(entry)))
+    const overrides: Context = parseVars(flags.var)
 
     if (!this.jsonEnabled()) {
       this.log(bold(`Running recipe ${cyan(recipe.name)}`))
@@ -57,7 +48,32 @@ Use --var to override the recipe's default variables, and --dry-run to preview t
       dryRun: flags['dry-run'],
       exec: (command) => execShell(command),
       log: (message) => this.log(message),
-      runCommand: (id, argv) => this.config.runCommand(id, argv),
+      runCommand: (id, argv, silent) => {
+        // Find the longest matching subcommand by greedily consuming argv tokens.
+        // Stopping at the first match would dispatch "recipe validate" to the "recipe"
+        // topic instead of the "recipe:validate" subcommand.
+        let bestId: null | string = this.config.findCommand(id) ? id : null
+        let bestI = 0
+        let commandId = id
+        for (const [i, token] of argv.entries()) {
+          commandId = `${commandId}:${token}`
+          if (this.config.findCommand(commandId)) {
+            bestId = commandId
+            bestI = i + 1
+          }
+        }
+
+        const [resolvedId, resolvedArgv] = bestId ? [bestId, argv.slice(bestI)] : [id, argv]
+        if (silent) {
+          const orig = process.stdout.write.bind(process.stdout)
+          process.stdout.write = () => true
+          return this.config.runCommand(resolvedId, resolvedArgv).finally(() => {
+            process.stdout.write = orig
+          })
+        }
+
+        return this.config.runCommand(resolvedId, resolvedArgv)
+      },
     }
 
     const result = await executeRecipe(recipe, runner, overrides)

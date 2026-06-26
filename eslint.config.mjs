@@ -13,4 +13,9 @@ export default [
   },
   ...oclif,
   prettier,
+  {
+    rules: {
+      'no-implicit-coercion': 'off',
+    },
+  },
 ]

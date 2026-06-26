@@ -1,0 +1,32 @@
+{
+  "name": "jira-my-open-issues",
+  "description": "List your open Jira issues and print a one-line summary of each. Uses the `sdkck jira` plugin — run `sdkck jira auth add` once to authenticate. Override --var jql=... to search anything else.",
+  "version": "1.0",
+  "vars": {
+    "jql": "assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC",
+    "max": 20
+  },
+  "steps": [
+    {
+      "log": "Searching Jira: ${jql}"
+    },
+    {
+      "exec": "sdkck jira issue search \"${jql}\" --max ${max} 2>/dev/null",
+      "capture": "result",
+      "json": true,
+      "silent": true
+    },
+    {
+      "log": "Found ${result.data.issues.length} open issue(s)."
+    },
+    {
+      "forEach": "${result.data.issues}",
+      "as": "issue",
+      "steps": [
+        {
+          "log": "  ${issue.key} [${issue.fields.status.name}] ${issue.fields.summary}"
+        }
+      ]
+    }
+  ]
+}

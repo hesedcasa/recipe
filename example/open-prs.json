@@ -1,0 +1,28 @@
+{
+  "name": "open-prs",
+  "description": "List the open pull requests in the current repo and print a one-line summary of each. Uses the GitHub CLI (gh), so it runs anywhere you are authenticated with `gh auth login`.",
+  "version": "1.0",
+  "vars": {
+    "limit": 20
+  },
+  "steps": [
+    {
+      "exec": "gh pr list --json number,title,author --limit ${limit}",
+      "capture": "prs",
+      "json": true,
+      "silent": true
+    },
+    {
+      "log": "Found ${prs.length} open PR(s)."
+    },
+    {
+      "forEach": "${prs}",
+      "as": "pr",
+      "steps": [
+        {
+          "log": "  #${pr.number} ${pr.title} (@${pr.author.login})"
+        }
+      ]
+    }
+  ]
+}
