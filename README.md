@@ -24,7 +24,7 @@ $ npm install -g @hesed/recipe
 $ recipe COMMAND
 running command...
 $ recipe (--version)
-@hesed/recipe/0.1.0 linux-x64 node-v22.23.0
+@hesed/recipe/0.2.0 linux-x64 node-v22.23.0
 $ recipe --help [COMMAND]
 USAGE
   $ recipe COMMAND
@@ -92,7 +92,7 @@ EXAMPLES
   $ recipe chain 'exec: date' --dry-run
 ```
 
-_See code: [src/commands/chain.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/chain.ts)_
+_See code: [src/commands/chain.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/chain.ts)_
 
 ## `recipe recipe`
 
@@ -114,7 +114,7 @@ EXAMPLES
   $ recipe recipe
 ```
 
-_See code: [src/commands/recipe/index.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/index.ts)_
+_See code: [src/commands/recipe/index.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/index.ts)_
 
 ## `recipe recipe create NAME`
 
@@ -145,7 +145,7 @@ EXAMPLES
   $ recipe recipe create close-user-tickets --description "Close all tickets for a user"
 ```
 
-_See code: [src/commands/recipe/create.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/create.ts)_
+_See code: [src/commands/recipe/create.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/create.ts)_
 
 ## `recipe recipe delete RECIPE`
 
@@ -207,7 +207,7 @@ EXAMPLES
   $ recipe recipe export close-user-tickets --stdout
 ```
 
-_See code: [src/commands/recipe/export.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/export.ts)_
+_See code: [src/commands/recipe/export.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/export.ts)_
 
 ## `recipe recipe import PATH`
 
@@ -238,7 +238,7 @@ EXAMPLES
   $ recipe recipe import ./shared-recipe.json --name my-copy
 ```
 
-_See code: [src/commands/recipe/import.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/import.ts)_
+_See code: [src/commands/recipe/import.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/import.ts)_
 
 ## `recipe recipe remove RECIPE`
 
@@ -266,7 +266,7 @@ EXAMPLES
   $ recipe recipe remove close-user-tickets
 ```
 
-_See code: [src/commands/recipe/remove.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/remove.ts)_
+_See code: [src/commands/recipe/remove.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/remove.ts)_
 
 ## `recipe recipe run RECIPE`
 
@@ -301,7 +301,7 @@ EXAMPLES
   $ recipe recipe run ./my-recipe.json --dry-run
 ```
 
-_See code: [src/commands/recipe/run.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/run.ts)_
+_See code: [src/commands/recipe/run.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/run.ts)_
 
 ## `recipe recipe show RECIPE`
 
@@ -326,7 +326,7 @@ EXAMPLES
   $ recipe recipe show close-user-tickets
 ```
 
-_See code: [src/commands/recipe/show.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/show.ts)_
+_See code: [src/commands/recipe/show.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/show.ts)_
 
 ## `recipe recipe validate RECIPE`
 
@@ -351,5 +351,5 @@ EXAMPLES
   $ recipe recipe validate ./my-recipe.json
 ```
 
-_See code: [src/commands/recipe/validate.ts](https://github.com/hesedcasa/recipe/blob/v0.1.0/src/commands/recipe/validate.ts)_
+_See code: [src/commands/recipe/validate.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/validate.ts)_
 <!-- commandsstop -->
