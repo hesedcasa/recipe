@@ -24,7 +24,7 @@ $ npm install -g @hesed/recipe
 $ recipe COMMAND
 running command...
 $ recipe (--version)
-@hesed/recipe/0.1.0 darwin-arm64 node-v22.22.3
+@hesed/recipe/0.1.0 linux-x64 node-v22.23.0
 $ recipe --help [COMMAND]
 USAGE
   $ recipe COMMAND
@@ -62,20 +62,23 @@ GLOBAL FLAGS
 
 DESCRIPTION
   Chain commands on the fly, passing each step's output into the next.
+  How it works
+  Each argument represents one step in the chain
+  A step's output can be saved to a variable: '=> name'
+  To automatically parse JSON: '=>json name'
+  Later steps can reference saved variables using placeholders
 
-  Each positional argument is one step. A step's output is captured into a named variable
-  with a trailing "=> name" (or "=>json name" to parse JSON), and later steps reference that
-  variable with placeholder interpolation (see the examples). Steps can be shell commands
-  (exec), this CLI's own commands (run), variable assignments (set), logs (log), loops
-  (forEach / repeat) and branches (if / else).
+  Supported step types
+  exec — run shell commands
+  run — run CLI commands
+  set — define variables
+  log — print values
+  forEach / repeat — loops
+  if / else — conditional logic
 
-  A control step's body is the single step that follows it, or a "{ ... }" block (pass "{"
-  and "}" as their own arguments) to group several steps. Use --save to keep the assembled
-  chain as a reusable recipe.
+  Use blocks when you need multiple steps inside a loop or condition: '{...}'
+  Always wrap each step in single quotes
 
-  Wrap each step in SINGLE quotes. Steps contain placeholders, and inside double quotes a
-  shell tries to expand them itself (zsh fails with "bad substitution") — single quotes pass
-  them through untouched for this command to interpolate.
 
 EXAMPLES
   $ recipe chain 'run: jira issue search "assignee = currentUser() AND statusCategory != Done" => r' 'log: found ${r.data.issues.length} open issue(s)'
