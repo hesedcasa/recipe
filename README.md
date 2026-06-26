@@ -24,7 +24,7 @@ $ npm install -g @hesed/recipe
 $ recipe COMMAND
 running command...
 $ recipe (--version)
-@hesed/recipe/0.1.0 linux-x64 node-v22.22.3
+@hesed/recipe/0.1.0 linux-x64 node-v22.23.0
 $ recipe --help [COMMAND]
 USAGE
   $ recipe COMMAND
