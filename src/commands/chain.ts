@@ -16,36 +16,39 @@ import {validateRecipe} from '../recipe/validate.js'
 import {parseVars} from '../recipe/vars.js'
 
 export default class RecipeChain extends HostConfigCommand {
-  static description = `Chain commands on the fly, passing each step's output into the next.
-How it works
-  Each argument represents one step in the chain
-  A step's output can be saved to a variable: '=> name'
-  To automatically parse JSON: '=>json name'
-  Later steps can reference saved variables using placeholders
+  static description = `Step syntax — one step per argument, always wrapped in single quotes:
+  exec: <shell command> [=> name | =>json name]
+  run:  <command-id> [args...]  [=> name | =>json name]
+  set:  <name> = <value>
+  log:  <message>
+  forEach: <collection> [as <name>]   body = next step, or a '{ ... }' block
+  repeat:  <count> [as <name>]        body = next step, or a '{ ... }' block
+  if:      <condition>                body = next step, or a '{ ... }' block
+  else                                (optional, follows an if body)
 
-Supported step types
-  exec — run shell commands
-  run — run CLI commands
-  set — define variables
-  log — print values
-  forEach / repeat — loops
-  if / else — conditional logic
+Capturing output:
+  => name      saves raw stdout to a variable (trailing newline stripped)
+  =>json name  parses stdout as JSON before saving
 
-Use blocks when you need multiple steps inside a loop or condition: '{...}'
-Always wrap each step in single quotes
+Blocks: pass '{' and '}' as separate arguments to group multiple steps as a body.
+Variables set in one step are available as placeholders in all later steps.
 `
   static enableJsonFlag = true
   // Wrap each step in SINGLE quotes: steps contain ${...} placeholders, and a shell
   // would try to expand them inside double quotes (zsh errors with "bad substitution").
   // Single quotes pass them through literally for the CLI to interpolate.
   static examples = [
-    "<%= config.bin %> <%= command.id %> 'run: jira issue search \"assignee = currentUser() AND statusCategory != Done\" => r' 'log: found ${r.data.issues.length} open issue(s)'",
+    "<%= config.bin %> <%= command.id %> 'exec: date => today' 'log: Today is ${today}'",
+    "<%= config.bin %> <%= command.id %> 'set: items = [\"apple\",\"banana\",\"cherry\"]' 'forEach: ${items} as fruit' 'log: - ${fruit}'",
+    "<%= config.bin %> <%= command.id %> 'set: count = 3' 'if: ${count} > 0' 'log: work to do' 'else' 'log: nothing to do'",
+    "<%= config.bin %> <%= command.id %> 'set: nums = [1,2,3]' 'forEach: ${nums} as n' '{' 'log: item ${n}' 'exec: echo ${n}' '}'",
     "<%= config.bin %> <%= command.id %> 'run: jira issue search \"assignee = currentUser() AND statusCategory != Done\" => r' 'forEach: ${r.data.issues} as issue' 'log: ${issue.key} — ${issue.fields.summary}'",
     "<%= config.bin %> <%= command.id %> 'run: bb pr list my-workspace my-repo --state OPEN => r' 'forEach: ${r.data.values} as pr' 'log: #${pr.id} ${pr.title} (${pr.source.branch.name} → ${pr.destination.branch.name})'",
-    "<%= config.bin %> <%= command.id %> 'set: count = 3' 'if: ${count} > 0' 'log: work to do' else 'log: nothing'",
-    "<%= config.bin %> <%= command.id %> 'exec: date' --dry-run",
+    "<%= config.bin %> <%= command.id %> 'exec: date => today' 'log: ${today}' --save show-date",
+    "<%= config.bin %> <%= command.id %> 'exec: rm -rf /tmp/cache' --dry-run",
   ]
   static flags = {
+    debug: Flags.boolean({description: 'Show step counts and execution summary.'}),
     'dry-run': Flags.boolean({description: 'Print the commands that would run without executing them.'}),
     save: Flags.string({description: 'Save the assembled chain as a reusable recipe with this name.'}),
     var: Flags.string({
@@ -56,6 +59,7 @@ Always wrap each step in single quotes
   // Steps arrive as free-form positional args (including "{", "}", "else"), so the
   // parser — not oclif — decides how many there are.
   static strict = false
+  static summary = "Chain commands on the fly, passing each step's output into the next."
 
   public async run(): Promise<Context> {
     const {flags} = await this.parse(RecipeChain)
@@ -72,7 +76,7 @@ Always wrap each step in single quotes
       if (!this.jsonEnabled()) this.log(dim(`Saved chain as recipe ${cyan(flags.save)} at ${path}\n`))
     }
 
-    if (!this.jsonEnabled()) {
+    if (!this.jsonEnabled() && flags.debug) {
       this.log(bold(`Running chain (${steps.length} step${steps.length === 1 ? '' : 's'})`))
       if (flags['dry-run']) this.log(dim('Dry run — no commands will be executed.\n'))
     }
@@ -111,7 +115,7 @@ Always wrap each step in single quotes
 
     const result = await executeRecipe(recipe, runner, vars)
 
-    if (!this.jsonEnabled()) {
+    if (!this.jsonEnabled() && flags.debug) {
       this.log(dim(`\nChain finished (${result.steps} step${result.steps === 1 ? '' : 's'}).`))
     }
 
