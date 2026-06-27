@@ -24,7 +24,7 @@ $ npm install -g @hesed/recipe
 $ recipe COMMAND
 running command...
 $ recipe (--version)
-@hesed/recipe/0.2.0 linux-x64 node-v22.23.0
+@hesed/recipe/0.3.0 linux-x64 node-v22.23.0
 $ recipe --help [COMMAND]
 USAGE
   $ recipe COMMAND
@@ -50,9 +50,10 @@ Chain commands on the fly, passing each step's output into the next.
 
 ```
 USAGE
-  $ recipe chain [--json] [--dry-run] [--save <value>] [--var <value>...]
+  $ recipe chain [--json] [--debug] [--dry-run] [--save <value>] [--var <value>...]
 
 FLAGS
+  --debug           Show step counts and execution summary.
   --dry-run         Print the commands that would run without executing them.
   --save=<value>    Save the assembled chain as a reusable recipe with this name.
   --var=<value>...  Provide an initial variable (key=value). Repeatable. Values parsed as JSON when possible.
@@ -62,37 +63,44 @@ GLOBAL FLAGS
 
 DESCRIPTION
   Chain commands on the fly, passing each step's output into the next.
-  How it works
-  Each argument represents one step in the chain
-  A step's output can be saved to a variable: '=> name'
-  To automatically parse JSON: '=>json name'
-  Later steps can reference saved variables using placeholders
 
-  Supported step types
-  exec — run shell commands
-  run — run CLI commands
-  set — define variables
-  log — print values
-  forEach / repeat — loops
-  if / else — conditional logic
+  Step syntax — one step per argument, always wrapped in single quotes:
+  exec: <shell command> [=> name | =>json name]
+  run:  <command-id> [args...]  [=> name | =>json name]
+  set:  <name> = <value>
+  log:  <message>
+  forEach: <collection> [as <name>]   body = next step, or a '{ ... }' block
+  repeat:  <count> [as <name>]        body = next step, or a '{ ... }' block
+  if:      <condition>                body = next step, or a '{ ... }' block
+  else                                (optional, follows an if body)
 
-  Use blocks when you need multiple steps inside a loop or condition: '{...}'
-  Always wrap each step in single quotes
+  Capturing output:
+  => name      saves raw stdout to a variable (trailing newline stripped)
+  =>json name  parses stdout as JSON before saving
+
+  Blocks: pass '{' and '}' as separate arguments to group multiple steps as a body.
+  Variables set in one step are available as placeholders in all later steps.
 
 
 EXAMPLES
-  $ recipe chain 'run: jira issue search "assignee = currentUser() AND statusCategory != Done" => r' 'log: found ${r.data.issues.length} open issue(s)'
+  $ recipe chain 'exec: date => today' 'log: Today is ${today}'
+
+  $ recipe chain 'set: items = ["apple","banana","cherry"]' 'forEach: ${items} as fruit' 'log: - ${fruit}'
+
+  $ recipe chain 'set: count = 3' 'if: ${count} > 0' 'log: work to do' 'else' 'log: nothing to do'
+
+  $ recipe chain 'set: nums = [1,2,3]' 'forEach: ${nums} as n' '{' 'log: item ${n}' 'exec: echo ${n}' '}'
 
   $ recipe chain 'run: jira issue search "assignee = currentUser() AND statusCategory != Done" => r' 'forEach: ${r.data.issues} as issue' 'log: ${issue.key} — ${issue.fields.summary}'
 
   $ recipe chain 'run: bb pr list my-workspace my-repo --state OPEN => r' 'forEach: ${r.data.values} as pr' 'log: #${pr.id} ${pr.title} (${pr.source.branch.name} → ${pr.destination.branch.name})'
 
-  $ recipe chain 'set: count = 3' 'if: ${count} > 0' 'log: work to do' else 'log: nothing'
+  $ recipe chain 'exec: date => today' 'log: ${today}' --save show-date
 
-  $ recipe chain 'exec: date' --dry-run
+  $ recipe chain 'exec: rm -rf /tmp/cache' --dry-run
 ```
 
-_See code: [src/commands/chain.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/chain.ts)_
+_See code: [src/commands/chain.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/chain.ts)_
 
 ## `recipe recipe`
 
@@ -114,7 +122,7 @@ EXAMPLES
   $ recipe recipe
 ```
 
-_See code: [src/commands/recipe/index.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/index.ts)_
+_See code: [src/commands/recipe/index.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/index.ts)_
 
 ## `recipe recipe create NAME`
 
@@ -145,7 +153,7 @@ EXAMPLES
   $ recipe recipe create close-user-tickets --description "Close all tickets for a user"
 ```
 
-_See code: [src/commands/recipe/create.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/create.ts)_
+_See code: [src/commands/recipe/create.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/create.ts)_
 
 ## `recipe recipe delete RECIPE`
 
@@ -207,7 +215,7 @@ EXAMPLES
   $ recipe recipe export close-user-tickets --stdout
 ```
 
-_See code: [src/commands/recipe/export.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/export.ts)_
+_See code: [src/commands/recipe/export.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/export.ts)_
 
 ## `recipe recipe import PATH`
 
@@ -238,7 +246,7 @@ EXAMPLES
   $ recipe recipe import ./shared-recipe.json --name my-copy
 ```
 
-_See code: [src/commands/recipe/import.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/import.ts)_
+_See code: [src/commands/recipe/import.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/import.ts)_
 
 ## `recipe recipe remove RECIPE`
 
@@ -266,7 +274,7 @@ EXAMPLES
   $ recipe recipe remove close-user-tickets
 ```
 
-_See code: [src/commands/recipe/remove.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/remove.ts)_
+_See code: [src/commands/recipe/remove.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/remove.ts)_
 
 ## `recipe recipe run RECIPE`
 
@@ -301,7 +309,7 @@ EXAMPLES
   $ recipe recipe run ./my-recipe.json --dry-run
 ```
 
-_See code: [src/commands/recipe/run.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/run.ts)_
+_See code: [src/commands/recipe/run.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/run.ts)_
 
 ## `recipe recipe show RECIPE`
 
@@ -326,7 +334,7 @@ EXAMPLES
   $ recipe recipe show close-user-tickets
 ```
 
-_See code: [src/commands/recipe/show.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/show.ts)_
+_See code: [src/commands/recipe/show.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/show.ts)_
 
 ## `recipe recipe validate RECIPE`
 
@@ -351,5 +359,5 @@ EXAMPLES
   $ recipe recipe validate ./my-recipe.json
 ```
 
-_See code: [src/commands/recipe/validate.ts](https://github.com/hesedcasa/recipe/blob/v0.2.0/src/commands/recipe/validate.ts)_
+_See code: [src/commands/recipe/validate.ts](https://github.com/hesedcasa/recipe/blob/v0.3.0/src/commands/recipe/validate.ts)_
 <!-- commandsstop -->
