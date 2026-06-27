@@ -48,6 +48,7 @@ Variables set in one step are available as placeholders in all later steps.
     "<%= config.bin %> <%= command.id %> 'exec: rm -rf /tmp/cache' --dry-run",
   ]
   static flags = {
+    debug: Flags.boolean({description: 'Show step counts and execution summary.'}),
     'dry-run': Flags.boolean({description: 'Print the commands that would run without executing them.'}),
     save: Flags.string({description: 'Save the assembled chain as a reusable recipe with this name.'}),
     var: Flags.string({
@@ -75,7 +76,7 @@ Variables set in one step are available as placeholders in all later steps.
       if (!this.jsonEnabled()) this.log(dim(`Saved chain as recipe ${cyan(flags.save)} at ${path}\n`))
     }
 
-    if (!this.jsonEnabled()) {
+    if (!this.jsonEnabled() && flags.debug) {
       this.log(bold(`Running chain (${steps.length} step${steps.length === 1 ? '' : 's'})`))
       if (flags['dry-run']) this.log(dim('Dry run — no commands will be executed.\n'))
     }
@@ -114,7 +115,7 @@ Variables set in one step are available as placeholders in all later steps.
 
     const result = await executeRecipe(recipe, runner, vars)
 
-    if (!this.jsonEnabled()) {
+    if (!this.jsonEnabled() && flags.debug) {
       this.log(dim(`\nChain finished (${result.steps} step${result.steps === 1 ? '' : 's'}).`))
     }
 
