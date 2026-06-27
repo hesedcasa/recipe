@@ -1,7 +1,7 @@
 {
   "name": "@hesed/recipe",
   "description": "Chains multiple CLI commands together to accomplish a task",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Hesed",
   "bin": {
     "recipe": "./bin/run.js"
