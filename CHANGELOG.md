@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/hesedcasa/recipe/compare/v0.2.0...v0.3.0) (2026-06-27)
+
+
+### 🎉 Features
+
+* **chain:** hide step-count banners behind --debug flag ([3580c5a](https://github.com/hesedcasa/recipe/commit/3580c5aa4b6c64450f23d8d628e27c7e64a76374))
+
+
+### 📄 Documentation
+
+* **chain:** improve help text with step syntax reference and better examples ([0688b2f](https://github.com/hesedcasa/recipe/commit/0688b2fd610669e9d305de78c8c7710c6d145fe7))
+
 ## [0.2.0](https://github.com/hesedcasa/recipe/compare/v0.1.0...v0.2.0) (2026-06-26)
 
 
